@@ -14,5 +14,10 @@ on:
 jobs:
   edd:
     uses: KhraD/edd-godot/.github/workflows/base_export_debug_deploy_godot_proj.yml@main
+    secrets:
+      ANDROID_KEYSTORE_RELEASE_BASE64: ${{ secrets.ANDROID_KEYSTORE_RELEASE_BASE64}}
+      ANDROID_KEYSTORE_RELEASE_USER: ${{ secrets.ANDROID_KEYSTORE_RELEASE_USER}}
+      ANDROID_KEYSTORE_RELEASE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_RELEASE_PASSWORD}}
+      BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
     with:
       build-target: ${{inputs.build-target}}

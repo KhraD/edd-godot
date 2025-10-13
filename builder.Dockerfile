@@ -13,7 +13,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends\
     curl \
     gpg \
     adb \
-    wine64 \
     osslsigncode \
     build-essential \
     scons \
@@ -122,11 +121,7 @@ RUN keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -key
 
 RUN godot -v -e --quit --headless ${GODOT_TEST_ARGS}
 
-RUN curl -sL -o /opt/rcedit/rcedit.exe --create-dirs https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x64.exe \
-    && chmod +x /opt/rcedit/rcedit.exe \
-    && echo 'export/windows/rcedit = "/opt/rcedit/rcedit.exe"' >> ~/.config/godot/editor_settings-${GODOT_VERSION}.tres \
-    && echo 'export/windows/wine = "/usr/lib/wine/wine64"' >> ~/.config/godot/editor_settings-${GODOT_VERSION}.tres \
-    && echo 'export/android/java_sdk_path = "'${JAVA_HOME}'"' >> ~/.config/godot/editor_settings-${GODOT_VERSION}.tres \
+RUN echo 'export/android/java_sdk_path = "'${JAVA_HOME}'"' >> ~/.config/godot/editor_settings-${GODOT_VERSION}.tres \
     && echo 'export/android/android_sdk_path = "/usr/lib/android-sdk"' >> ~/.config/godot/editor_settings-${GODOT_VERSION}.tres \
     && echo 'export/android/debug_keystore = "/root/debug.keystore"' >> ~/.config/godot/editor_settings-${GODOT_VERSION}.tres \
     && echo 'export/android/debug_keystore_user = "androiddebugkey"' >> ~/.config/godot/editor_settings-${GODOT_VERSION}.tres \

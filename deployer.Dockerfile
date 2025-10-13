@@ -10,7 +10,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends\
 	unzip \
 	git \
 	git-lfs \
-	jq
+	jq \
+	rsync
 
 #butler
 RUN mkdir -p /opt/butler/bin \
