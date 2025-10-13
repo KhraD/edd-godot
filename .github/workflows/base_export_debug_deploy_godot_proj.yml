@@ -5,6 +5,15 @@ on:
       build-target:
         required: true
         type: string
+    secrets:
+      ANDROID_KEYSTORE_RELEASE_BASE64:
+        required: false
+      ANDROID_KEYSTORE_RELEASE_USER:
+        required: false
+      ANDROID_KEYSTORE_RELEASE_PASSWORD:
+        required: false
+      BUTLER_API_KEY:
+        required: false
   workflow_dispatch:
     inputs:
       build-target:
@@ -292,10 +301,10 @@ jobs:
       - name: Export
         run: |
           if [ '${{ needs.pass-var.outputs.build-target }}' = 'release' ] && [ "$export_platform" = "android" ]; then          
-            echo ${{ secrets.SECRET_RELEASE_KEYSTORE_BASE64 }} | base64 --decode > /opt/godot/release.keystore
+            echo ${{ secrets.ANDROID_KEYSTORE_RELEASE_BASE64 }} | base64 --decode > /opt/godot/release.keystore
             export GODOT_ANDROID_KEYSTORE_RELEASE_PATH=/opt/godot/release.keystore
-            export GODOT_ANDROID_KEYSTORE_RELEASE_USER=${{ secrets.SECRET_RELEASE_KEYSTORE_USER }}
-            export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=${{ secrets.SECRET_RELEASE_KEYSTORE_PASSWORD }}
+            export GODOT_ANDROID_KEYSTORE_RELEASE_USER=${{ secrets.ANDROID_KEYSTORE_RELEASE_USER }}
+            export GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_RELEASE_PASSWORD }}
           fi
           mkdir -v -p "build/$sanitized_export_name"
           export_dir="$(readlink -f build)"
@@ -438,7 +447,12 @@ jobs:
           if [ ! -e ${sanitized_export_name} ]; then            
             echo "directory ${sanitized_export_name} wasn't found"
             exit 1
-          fi                    
+          fi
+          
+          if [ "${{ fromJson(needs.pass-var.outputs.export)[format('preset.{0}', matrix.mat-idxs)].platform }}" = "Web" ]; then
+            cd ${sanitized_export_name} && \
+              mv $(find . -maxdepth 1 -type f -name "*.html" | head -n 1) index.html
+          fi
       - name: Deploy to Itch.IO
         id: itchio
         run: |
@@ -448,13 +462,10 @@ jobs:
           butler status ${BUTLER_USER}/${project_name}:$sanitized_export_name
         env:
           BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
-      - name: Install rsync 📚
-        if: ${{ fromJson(needs.pass-var.outputs.export)[format('preset.{0}', matrix.mat-idxs)].platform == 'Web' }}
-        run: |
-          apt-get update && apt-get install -y rsync
-      - name: Deploy to GitHub Pages 🚀        
+      - name: Deploy to GitHub Pages    
         if: ${{ fromJson(needs.pass-var.outputs.export)[format('preset.{0}', matrix.mat-idxs)].platform == 'Web' }}
         uses: JamesIves/github-pages-deploy-action@releases/v4
         with:
           branch: gh-pages # The branch the action should deploy to.
           folder: ${{ fromJson(needs.pass-var.outputs.sanitized-export-names)[format('preset.{0}', matrix.mat-idxs)].sanitized-name }} # The folder the action should deploy.
+          single-commit: true
