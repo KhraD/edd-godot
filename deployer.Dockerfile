@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends\
 #butler
 RUN mkdir -p /opt/butler/bin \
   && cd /opt/butler/bin \
-  && curl -sL -o butler.zip https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default \
+  && curl -sL -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default \
   && unzip butler.zip \
   && rm butler.zip \
   && chmod +x butler

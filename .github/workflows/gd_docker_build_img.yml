@@ -6,7 +6,7 @@ on:
         description: 'Version of engine to build e.g. "3.4", "4.3"'     
         required: true
         type: string
-        default: '4.4'       
+        default: '4.6'       
       cmake-version:
         description: 'Version of cmake used by android build e.g. "3.10.2.4988404"'     
         required: true

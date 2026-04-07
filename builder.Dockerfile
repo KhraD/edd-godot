@@ -28,8 +28,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends\
     libxi-dev \
     libxrandr-dev \
     libwayland-dev \
+    libc6-dev \
     yasm \
     clang \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
 
 #java
@@ -42,15 +44,20 @@ ENV DOTNET_ROOT=/usr/share/dotnet
 COPY --from=mcr.microsoft.com/dotnet/sdk:9.0-noble $DOTNET_ROOT $DOTNET_ROOT
 ENV PATH="${DOTNET_ROOT}:${PATH}"
 
-#butler
-RUN mkdir -p /opt/butler/bin \
-    && cd /opt/butler/bin \
-    && curl -sL https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default | jar -x \
-    && chmod +x butler
-ENV PATH="/opt/butler/bin:${PATH}"    
+#rust
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    RUST_VERSION=1.94.1
+RUN curl -sL https://static.rust-lang.org/rustup/archive/1.29.0/x86_64-unknown-linux-gnu/rustup-init -o rustup-init; \
+    chmod +x rustup-init; \
+    ./rustup-init -y --no-modify-path --profile minimal --default-toolchain $RUST_VERSION --default-host x86_64-unknown-linux-gnu; \
+    rm rustup-init; \
+    chmod -R a+w $RUSTUP_HOME $CARGO_HOME;
+
+ENV PATH="${CARGO_HOME}/bin:${PATH}"
 
 #godot
-ARG GODOT_VERSION="4.4"
+ARG GODOT_VERSION="4.6"
 ARG GODOT_TEST_ARGS=""
 
 ENV GODOT_BASE_PULL_URI="https://github.com/godotengine/godot/releases/download"
@@ -64,9 +71,9 @@ RUN mkdir -p /opt/godot/base/gradle/build \
     && curl -sL ${GODOT_BASE_PULL_URI}/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip | jar -x \
     && curl -sL ${GODOT_BASE_PULL_URI}/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz | jar -x \
     && cp ./templates/android_source.zip /opt/godot/base/gradle/build \
-	&& cd /opt/godot/base/gradle \
-	&& echo "${GODOT_VERSION}.stable" > .build_version \
-	&& cd build \
+    && cd /opt/godot/base/gradle \
+    && echo "${GODOT_VERSION}.stable" > .build_version \
+    && cd build \
     && jar -xf android_source.zip \
     && rm android_source.zip \
     && chmod +x gradlew \
@@ -113,7 +120,7 @@ RUN yes | sdkmanager --licenses \
     && rm -r ${ANDROID_SDK_ROOT}/platform-tools \
     && mv ${ANDROID_SDK_ROOT}/cmdline-tools/latest-2 ${ANDROID_SDK_ROOT}/cmdline-tools/latest \
     && mv ${ANDROID_SDK_ROOT}/platform-tools-2 ${ANDROID_SDK_ROOT}/platform-tools \
-    && sdkmanager --update    
+    && sdkmanager --update
 
 # Add Android keystore and settings.
 RUN keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 \
@@ -129,7 +136,7 @@ RUN echo 'export/android/java_sdk_path = "'${JAVA_HOME}'"' >> ~/.config/godot/ed
     && echo 'export/android/force_system_user = false' >> ~/.config/godot/editor_settings-${GODOT_VERSION}.tres \
     && echo 'export/android/timestamping_authority_url = ""' >> ~/.config/godot/editor_settings-${GODOT_VERSION}.tres \
     && echo 'export/android/shutdown_adb_on_exit = true' >> ~/.config/godot/editor_settings-${GODOT_VERSION}.tres
-    
+
 # LLVM Toolchain
 RUN curl -sL -o /opt/llvm-mingw/llvm-mingw.tar.xz --create-dirs $(curl -s "https://api.github.com/repos/mstorsjo/llvm-mingw/releases/latest" | grep -E "browser_download_url(.)*ucrt-ubuntu(.)*x86_64" | cut -d '"' -f 4) \
     && cd /opt/llvm-mingw \
