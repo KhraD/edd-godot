@@ -1,8 +1,6 @@
-[gd_scene load_steps=11 format=3 uid="uid://c6u4rre1faw3n"]
+[gd_scene load_steps=10 format=3 uid="uid://c6u4rre1faw3n"]
 
-[ext_resource type="Script" uid="uid://1uwfxh3gofkm" path="res://character_body_2d.gd" id="1_ydr4r"]
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_obxc0"]
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_vho56"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_fyi0q"]
 
@@ -37,16 +35,14 @@ curve_z = SubResource("Curve_c36qy")
 
 [node name="root" type="Node2D"]
 
-[node name="CharacterBody2D" type="CharacterBody2D" parent="."]
+[node name="MyCharacterBody2D" type="MyCharacterBody2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="MyCharacterBody2D"]
 position = Vector2(233, 220)
-floor_stop_on_slope = false
-floor_constant_speed = true
-script = ExtResource("1_ydr4r")
+shape = SubResource("RectangleShape2D_vho56")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="CharacterBody2D"]
-shape = SubResource("CircleShape2D_obxc0")
-
-[node name="Sprite2D" type="Sprite2D" parent="CharacterBody2D"]
+[node name="Sprite2D" type="Sprite2D" parent="MyCharacterBody2D"]
+position = Vector2(233, 220)
 texture = SubResource("NoiseTexture2D_ddcb8")
 
 [node name="StaticBody2D" type="StaticBody2D" parent="."]
