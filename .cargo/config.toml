@@ -1,0 +1,17 @@
+[target.wasm32-unknown-emscripten]
+    rustflags = [
+        "-C", "link-args=-pthread", 
+        "-C", "target-feature=+atomics", 
+        "-C", "link-args=-sSIDE_MODULE=2",
+        "-C", "llvm-args=-enable-emscripten-cxx-exceptions=0",
+        "-Z", "default-visibility=hidden",
+        "-Z", "link-native-libraries=no",
+        "-Z", "emscripten-wasm-eh=false",
+    ]
+
+
+#[target.x86_64-apple-darwin]
+#    linker = "??x86_64-apple-darwin23.5-clang"
+#	
+#[target.aarch64-apple-darwin]
+#    linker = "??aarch64-apple-darwin23.5-clang"

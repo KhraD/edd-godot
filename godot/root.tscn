@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://c6u4rre1faw3n"]
+[gd_scene format=3 uid="uid://c6u4rre1faw3n"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_vho56"]
 
@@ -33,27 +33,27 @@ curve_x = SubResource("Curve_1c17s")
 curve_y = SubResource("Curve_c6fet")
 curve_z = SubResource("Curve_c36qy")
 
-[node name="root" type="Node2D"]
+[node name="root" type="Node2D" unique_id=1915900837]
 
-[node name="MyCharacterBody2D" type="MyCharacterBody2D" parent="."]
+[node name="MyCharacterBody2D" type="MyCharacterBody2D" parent="." unique_id=1213650812]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="MyCharacterBody2D"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="MyCharacterBody2D" unique_id=1987662680]
 position = Vector2(233, 220)
 shape = SubResource("RectangleShape2D_vho56")
 
-[node name="Sprite2D" type="Sprite2D" parent="MyCharacterBody2D"]
+[node name="Sprite2D" type="Sprite2D" parent="MyCharacterBody2D" unique_id=1729776040]
 position = Vector2(233, 220)
 texture = SubResource("NoiseTexture2D_ddcb8")
 
-[node name="StaticBody2D" type="StaticBody2D" parent="."]
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=143594092]
 position = Vector2(263.769, 294.756)
 physics_material_override = SubResource("PhysicsMaterial_v0xff")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D" unique_id=1822994096]
 position = Vector2(341, 72)
 shape = SubResource("RectangleShape2D_76v55")
 
-[node name="Sprite2D" type="Sprite2D" parent="StaticBody2D"]
+[node name="Sprite2D" type="Sprite2D" parent="StaticBody2D" unique_id=713390932]
 position = Vector2(342, 71)
 scale = Vector2(3.89062, 73)
 texture = SubResource("CurveXYZTexture_jdo7t")

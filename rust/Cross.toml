@@ -1,0 +1,18 @@
+[target.i686-unknown-linux-gnu]
+image = "ghcr.io/cross-rs/i686-unknown-linux-gnu:edge"
+[target.x86_64-unknown-linux-gnu]
+image = "ghcr.io/cross-rs/x86_64-unknown-linux-gnu:edge"
+[target.aarch64-unknown-linux-gnu]
+image = "ghcr.io/cross-rs/aarch64-unknown-linux-gnu:edge"
+[target.i686-pc-windows-gnu]
+image = "ghcr.io/raniz85/cross/i686-pc-windows-gnu:24.04"
+[target.x86_64-pc-windows-gnu]
+image = "ghcr.io/raniz85/cross/x86_64-pc-windows-gnu:24.04"
+[target.wasm32-unknown-emscripten]
+image = "custom-wasm32-unknown-emscripten:edge"
+[target.aarch64-linux-android]
+image = "ghcr.io/cross-rs/aarch64-linux-android:edge"
+[target.armv7-linux-androideabi]
+image = "ghcr.io/cross-rs/armv7-linux-androideabi:edge"
+[target.x86_64-linux-android]
+image = "ghcr.io/cross-rs/x86_64-linux-android:edge"
