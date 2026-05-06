@@ -5,56 +5,55 @@ LABEL author="KhraD"
 RUN dpkg-reconfigure debconf --frontend=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends\
-    ca-certificates \
+    ca-certificates \	
     git \
     git-lfs \
-    python3 \
-    python3-openssl \
     curl \
     gpg \
     adb \
     osslsigncode \
-    build-essential \
-    scons \
-    pkg-config \
-    libx11-dev \
-    libxcursor-dev \
-    libxinerama-dev \
-    libgl1-mesa-dev \
-    libglu1-mesa-dev \
-    libasound2-dev \
-    libpulse-dev \
-    libudev-dev \
-    libxi-dev \
-    libxrandr-dev \
-    libwayland-dev \
-    libc6-dev \
-    yasm \
-    clang \
-    gcc \
+    fontconfig \
+    docker-cli \
     && rm -rf /var/lib/apt/lists/*
 
 #java
-ENV JAVA_HOME=/opt/java/openjdk
+ENV JAVA_HOME="/opt/java/openjdk"
 COPY --from=eclipse-temurin:17-noble $JAVA_HOME $JAVA_HOME
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 #.net
-ENV DOTNET_ROOT=/usr/share/dotnet
+ENV DOTNET_ROOT="/usr/share/dotnet"
 COPY --from=mcr.microsoft.com/dotnet/sdk:9.0-noble $DOTNET_ROOT $DOTNET_ROOT
 ENV PATH="${DOTNET_ROOT}:${PATH}"
 
 #rust
-ENV RUSTUP_HOME=/usr/local/rustup \
-    CARGO_HOME=/usr/local/cargo \
-    RUST_VERSION=1.94.1
-RUN curl -sL https://static.rust-lang.org/rustup/archive/1.29.0/x86_64-unknown-linux-gnu/rustup-init -o rustup-init; \
-    chmod +x rustup-init; \
-    ./rustup-init -y --no-modify-path --profile minimal --default-toolchain $RUST_VERSION --default-host x86_64-unknown-linux-gnu; \
-    rm rustup-init; \
-    chmod -R a+w $RUSTUP_HOME $CARGO_HOME;
-
+ENV RUSTUP_HOME="/usr/local/rustup" \
+    CARGO_HOME="/usr/local/cargo" \
+    RUST_VERSION="1.94.1" \
+    CROSS_CONTAINER_IN_CONTAINER="true"
 ENV PATH="${CARGO_HOME}/bin:${PATH}"
+RUN curl -sL https://static.rust-lang.org/rustup/archive/1.29.0/x86_64-unknown-linux-gnu/rustup-init -o rustup-init \
+    && chmod +x rustup-init \
+    && ./rustup-init -y --no-modify-path --profile minimal --default-toolchain $RUST_VERSION --default-host x86_64-unknown-linux-gnu \
+    && rm rustup-init \
+    && chmod -R a+w $RUSTUP_HOME $CARGO_HOME \
+    && rustup toolchain install nightly \
+    && rustup component add rust-src --toolchain nightly \
+    && rustup target add wasm32-unknown-emscripten --toolchain nightly \
+    && rustup target add \
+      i686-unknown-linux-gnu \ 
+      x86_64-unknown-linux-gnu \
+      aarch64-unknown-linux-gnu \
+      i686-pc-windows-gnu \
+      x86_64-pc-windows-gnu \      
+      aarch64-linux-android \
+      armv7-linux-androideabi \
+      x86_64-linux-android \
+      i686-linux-android \
+#      aarch64-apple-darwin \
+#      aarch64-apple-ios \
+    && curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash \
+    && cargo binstall cross
 
 #godot
 ARG GODOT_VERSION="4.6"
@@ -114,6 +113,9 @@ ARG ANDROID_NDK_VERSION="23.2.8568313"
 ARG ANDROID_BUILD_TOOLS_VERSION="34.0.0"
 ARG ANDROID_PLATFORM_VERSION="34"
 
+ENV NDK_TOOLCHAIN="$ANDROID_HOME/ndk/$ANDROID_NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin"
+ENV CLANG_PATH="$NDK_TOOLCHAIN/clang"
+
 RUN yes | sdkmanager --licenses \
     && sdkmanager "platform-tools" "build-tools;$ANDROID_BUILD_TOOLS_VERSION" "platforms;android-$ANDROID_PLATFORM_VERSION" "cmdline-tools;latest" "cmake;$ANDROID_CMAKE_VERSION" "ndk;$ANDROID_NDK_VERSION" --sdk_root=$ANDROID_SDK_ROOT \
     && rm -r ${ANDROID_SDK_ROOT}/cmdline-tools/latest \
@@ -136,12 +138,6 @@ RUN echo 'export/android/java_sdk_path = "'${JAVA_HOME}'"' >> ~/.config/godot/ed
     && echo 'export/android/force_system_user = false' >> ~/.config/godot/editor_settings-${GODOT_VERSION}.tres \
     && echo 'export/android/timestamping_authority_url = ""' >> ~/.config/godot/editor_settings-${GODOT_VERSION}.tres \
     && echo 'export/android/shutdown_adb_on_exit = true' >> ~/.config/godot/editor_settings-${GODOT_VERSION}.tres
-
-# LLVM Toolchain
-RUN curl -sL -o /opt/llvm-mingw/llvm-mingw.tar.xz --create-dirs $(curl -s "https://api.github.com/repos/mstorsjo/llvm-mingw/releases/latest" | grep -E "browser_download_url(.)*ucrt-ubuntu(.)*x86_64" | cut -d '"' -f 4) \
-    && cd /opt/llvm-mingw \
-    && tar -xf /opt/llvm-mingw/* \
-    && ln -sF $(ls | grep -v tar) current
 
 RUN mkdir -p /var/opt/proj
 

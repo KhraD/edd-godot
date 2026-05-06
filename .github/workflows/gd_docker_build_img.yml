@@ -45,13 +45,17 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pass Major Minor Version
+        run: |
+          MAJMIN=$(echo "${{ github.event.inputs.godot-version }}" | cut -d'.' -f1,2)
+          echo "MAJMIN=$MAJMIN" >> $GITHUB_ENV
       - name: Build and push Docker images
         uses: docker/build-push-action@v6.9.0
         with:
           context: .
           file: builder.Dockerfile
           push: true
-          tags: ghcr.io/khrad/godot-builder:${{ github.event.inputs.godot-version }}
+          tags: ghcr.io/khrad/godot-builder:${{ env.MAJMIN}}
           build-args: |
             GODOT_VERSION=${{ github.event.inputs.godot-version }}
             ANDROID_CMAKE_VERSION=${{ github.event.inputs.cmake-version }}

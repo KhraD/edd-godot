@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           lfs: true
           submodules: true
@@ -82,12 +82,12 @@ jobs:
           echo "mat-idxs-notapple=$mat_idxs_notapple" >> $GITHUB_OUTPUT
           echo "mat-idxs-apple=$mat_idxs_apple" >> $GITHUB_OUTPUT
           echo "mat-idxs=$mat_idxs" >> $GITHUB_OUTPUT
-      - name: Pass has Extension
-        id: pass-has-extension
+      - name: Pass has Rust Extension
+        id: pass-has-rust-extension
         run: |
-          extension_dir=$(find . -name "godot-cpp") || true;
-          has_extension=$([ -n "$extension_dir" ] && echo true) || true;
-          echo "has-extension=$has_extension" >> $GITHUB_OUTPUT
+          extension_dir=$(find . -name "Cargo.toml") || true;
+          has_rust_extension=$([ -n "$extension_dir" ] && echo true) || true;
+          echo "has-rust-extension=$has_rust_extension" >> $GITHUB_OUTPUT
       - name: Pass Sanitized Preset Names
         id: pass-sanitized-export-names
         run: |
@@ -108,29 +108,6 @@ jobs:
           echo "release-filenames<<EOF" >> $GITHUB_OUTPUT
           cat release-filenames.txt >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-      - name: Print Variables
-        run: |
-          cat << EOF
-          godot-version: ${{ steps.pass-version.outputs.godot-version }}
-          
-          build-target: ${{ steps.pass-build-target.outputs.build-target }}
-          
-          project: ${{ steps.pass-project.outputs.project }}
-          
-          export: ${{ steps.pass-exports.outputs.export }}
-          
-          mat-idxs-notapple: ${{ steps.pass-idxs.outputs.mat-idxs-notapple }}
-          
-          mat-idxs-apple: ${{ steps.pass-idxs.outputs.mat-idxs-apple }}
-          
-          mat-idxs: ${{ steps.pass-idxs.outputs.mat-idxs }}
-          
-          has-extension: ${{ steps.pass-has-extension.outputs.has-extension }}
-          
-          sanitized-export-names: ${{ steps.pass-sanitized-export-names.outputs.sanitized-export-names }}
-          
-          release-filenames: ${{ steps.pass-release-filenames.outputs.release-filenames }}          
-          EOF         
     outputs: 
       godot-version: ${{ steps.pass-version.outputs.godot-version }}
       build-target: ${{ steps.pass-build-target.outputs.build-target }}
@@ -139,7 +116,7 @@ jobs:
       mat-idxs-notapple: ${{ steps.pass-idxs.outputs.mat-idxs-notapple }}
       mat-idxs-apple: ${{ steps.pass-idxs.outputs.mat-idxs-apple }}
       mat-idxs: ${{ steps.pass-idxs.outputs.mat-idxs-apple }}
-      has-extension: ${{ steps.pass-has-extension.outputs.has-extension }}
+      has-rust-extension: ${{ steps.pass-has-rust-extension.outputs.has-rust-extension }}
       sanitized-export-names: ${{ steps.pass-sanitized-export-names.outputs.sanitized-export-names }}
       release-filenames: ${{ steps.pass-release-filenames.outputs.release-filenames }}
   
@@ -149,7 +126,7 @@ jobs:
     needs: [pass-var]    
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           lfs: true
           submodules: true
@@ -173,7 +150,7 @@ jobs:
       image: ghcr.io/khrad/godot-builder:${{ needs.pass-var.outputs.godot-version }}      
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           lfs: true
           submodules: true 
@@ -188,27 +165,34 @@ jobs:
           mv /root/.local/share/godot/export_templates ~/.local/share/godot/export_templates
           
           export_platform="${{ fromJson(needs.pass-var.outputs.export)[format('preset.{0}', matrix.mat-idxs)].platform }}"
-          export_platform=$(echo $export_platform | awk '{print tolower($1)}')
-          echo "export_platform=$export_platform"
+          export_platform=$(echo $export_platform | awk '{print tolower($1)}')          
           echo "export_platform=$export_platform" >> $GITHUB_ENV       
           
           export_architectures="${{ fromJson(needs.pass-var.outputs.export)[format('preset.{0}.options', matrix.mat-idxs)]['binary_format/architecture'] }}"
+          if [ "$export_architectures" = "x86_32" ]; then
+            export_architectures="i686"
+          fi
+          if [ "$export_architectures" = "arm64" ]; then
+            export_architectures="aarch64"
+          fi
+          if [ "$export_platform" = "web" ]; then
+            export_architectures="wasm32"
+          fi          
           android_archs=""
-          [ '${{ fromJson(needs.pass-var.outputs.export)[format('preset.{0}.options', matrix.mat-idxs)]['architectures/armeabi-v7a'] }}' = 'true' ] && android_archs="$android_archs arm32"
-          [ '${{ fromJson(needs.pass-var.outputs.export)[format('preset.{0}.options', matrix.mat-idxs)]['architectures/arm64-v8a'] }}' = 'true' ]   && android_archs="$android_archs arm64"
-          [ '${{ fromJson(needs.pass-var.outputs.export)[format('preset.{0}.options', matrix.mat-idxs)]['architectures/x86'] }}' = 'true' ]         && android_archs="$android_archs x86_32"
+          [ '${{ fromJson(needs.pass-var.outputs.export)[format('preset.{0}.options', matrix.mat-idxs)]['architectures/armeabi-v7a'] }}' = 'true' ] && android_archs="$android_archs armv7"
+          [ '${{ fromJson(needs.pass-var.outputs.export)[format('preset.{0}.options', matrix.mat-idxs)]['architectures/arm64-v8a'] }}' = 'true' ]   && android_archs="$android_archs aarch64"          
           [ '${{ fromJson(needs.pass-var.outputs.export)[format('preset.{0}.options', matrix.mat-idxs)]['architectures/x86_64'] }}' = 'true' ]      && android_archs="$android_archs x86_64"          
-          export_architectures=$(echo "$export_architectures $android_archs" | xargs)          
-          echo "export_architectures=$export_architectures"
+          export_architectures=$(echo "$export_architectures $android_archs" | xargs)
+          
           echo "export_architectures=$export_architectures" >> $GITHUB_ENV
                     
           export_name="${{ fromJson(needs.pass-var.outputs.export)[format('preset.{0}', matrix.mat-idxs)].name }}"
-          echo "export_name=$export_name"
+
           echo "export_name=$export_name" >> $GITHUB_ENV
           echo "export_name=$export_name" >> $GITHUB_OUTPUT
                     
           sanitized_export_name="${{ fromJson(needs.pass-var.outputs.sanitized-export-names)[format('preset.{0}', matrix.mat-idxs)].sanitized-name }}"
-          echo "sanitized_export_name=$sanitized_export_name"
+
           echo "sanitized_export_name=$sanitized_export_name" >> $GITHUB_ENV
           echo "sanitized_export_name=$sanitized_export_name" >> $GITHUB_OUTPUT
                     
@@ -233,7 +217,7 @@ jobs:
             *)       file_extension=".zip"
           esac
           export_file_name="${project_name_nospace}-v${project_version}${file_extension}"          
-          echo "export_file_name=$export_file_name"
+
           echo "export_file_name=$export_file_name" >> $GITHUB_ENV
           
           ###
@@ -259,44 +243,61 @@ jobs:
           fi
           echo "2" | update-alternatives --config godot >> /dev/null
           ln -nsf /opt/godot/mono/gradle /opt/godot/gradle
-      - name: Build GDExtensions
-        if: ${{ needs.pass-var.outputs.has-extension == 'true' }}
+      - name: Set up Docker Buildx
+        if: ${{ fromJson(needs.pass-var.outputs.export)[format('preset.{0}', matrix.mat-idxs)].platform == 'web'}}
+        uses: docker/setup-buildx-action@v4
+      - name: Build Rust GDExtension
+        if: ${{ needs.pass-var.outputs.has-rust-extension == 'true' }}
         run: |
-          if [ "$export_platform" = "web" ]; then
-            echo "Godot currently doesn't support exporting to web platform with GDExtensions"
-            exit 1
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git remote add build-repo https://github.com/KhraD/edd-godot.git
+          git fetch build-repo rust
+          git checkout build-repo/rust -- .cargo/config.toml rust/Cross.toml
+          
+          mv -f rust/Cross.toml $(find . -name "Cargo.toml" | xargs dirname) || true                   
+          
+          mode=""
+          
+          if [ "${{ needs.pass-var.outputs.build-target }}" = "release" ]; then            
+            mode="--release"
           fi
+          
+          nightly=""
+          zbuild=""
+          webfeatures=""
+          
+          if [ "$export_platform" = "web" ]; then            
+            nightly="+nightly"
+            zbuild="-Zbuild-std"
+            webfeatures="--no-default-features --features web"
+            
+            godot --headless --dump-extension-api
+            git checkout build-repo/rust -- rust/custom-wasm32-unknown-emscripten.Dockerfile
+            mv rust/custom-wasm32-unknown-emscripten.Dockerfile . || true
+            docker buildx build -t custom-wasm32-unknown-emscripten:edge -f custom-wasm32-unknown-emscripten.Dockerfile --load .
+          fi
+          
           for architecture in $export_architectures; do
-            scons_command="\
-              scons platform=$export_platform \
-              arch=$architecture \
-              verbose=yes \
-              use_llvm=yes \
-              lto=full"
-            
-            target=""
-            case "${{ needs.pass-var.outputs.build-target }}" in
-              debug) target="\
-                target=template_debug \
-                debug_symbols=yes \
-                symbols_visibility=visible \
-                disable_exceptions=false"
+            rust_target=""
+            case "$export_platform" in
+              windows) rust_target="${architecture}-pc-windows-gnu"
               ;;
-              release) target="target=template_release"
+              linux) rust_target="${architecture}-unknown-linux-gnu"
               ;;
-              *) target="target=template_debug"
+              web) rust_target="${architecture}-unknown-emscripten"
               ;;
+              android) 
+                if [ "$architecture" = "armv7" ]; then
+                       rust_target="${architecture}-linux-androideabi"
+                else
+                       rust_target="${architecture}-linux-android"
+                fi
+              ;;
+              *) echo "No Rust Target Found"
+                 exit 1
             esac
-            
-            xcompile=""
-            if [ "$export_platform" = "windows" ]; then
-              xcompile="use_mingw=yes \
-                mingw_prefix=/opt/llvm-mingw/current"
-            fi
-            
-            scons_command=$(echo "$scons_command $target $xcompile" | xargs)
-            echo "scons_command: $scons_command"
-            eval "$scons_command"
+            cd $(find . -name "Cargo.toml" | xargs dirname) 
+            cross $nightly build $zbuild --target $rust_target $mode $webfeatures
           done
       - name: Export
         run: |
@@ -310,12 +311,7 @@ jobs:
           export_dir="$(readlink -f build)"
           cd $(find . -name "project.godot" | grep -v "godot.cpp" | xargs dirname)
           
-          echo "godot --headless --verbose \
-          --export-${{ needs.pass-var.outputs.build-target }} \
-          \"$export_name\" \
-          \"$export_dir/$sanitized_export_name/$export_file_name\""
-          
-          godot --headless --verbose \
+          godot --headless --verbose --debug \
           --export-${{ needs.pass-var.outputs.build-target }} \
           "$export_name" \
           "$export_dir/$sanitized_export_name/$export_file_name"          
@@ -327,13 +323,14 @@ jobs:
   export-apple:
     name: Export Apple - ${{ fromJson(needs.pass-var.outputs.export)[format('preset.{0}', matrix.mat-idxs)].name }}
     runs-on: ubuntu-latest
+    if: ${{ fromJson(needs.pass-var.outputs.mat-idxs-apple)[0] != null }}
     strategy:
       matrix: ${{ fromJson(needs.pass-var.outputs.mat-idxs-apple) }}
     needs: [pass-var,verify]
     steps:
-      - name: Print Idx
+      - name: Echo build
         run: |
-          echo ${{ matrix.mat-idxs }}
+          echo "Can't build the export config with index ${{ matrix.mat-idxs }} yet"
   tag-release:
     name: Tag Release
     runs-on: ubuntu-latest
@@ -341,7 +338,7 @@ jobs:
     if: ${{ !cancelled() && !failure() && needs.pass-var.outputs.build-target == 'release' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           lfs: true
           submodules: true
@@ -354,7 +351,6 @@ jobs:
           tag_name="v${release_version}-${{ github.head_ref || github.ref_name }}"
           git tag $tag_name ${{ github.head_ref || github.ref_name }}
           git push origin $tag_name
-          echo "tag-name=$tag_name"
           echo "tag-name=$tag_name" >> $GITHUB_OUTPUT
     outputs:
       tag-name: ${{ steps.tag.outputs.tag-name }}
@@ -366,7 +362,7 @@ jobs:
     if: ${{ !cancelled() && !failure() && needs.pass-var.outputs.build-target == 'release' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           lfs: true
           submodules: true
@@ -421,7 +417,7 @@ jobs:
     if: ${{ !cancelled() && !failure() && needs.pass-var.outputs.build-target == 'release' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           lfs: true
           submodules: true
